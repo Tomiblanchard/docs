@@ -2,6 +2,11 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "JoroAR",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#38BDF8",
+    "dark": "#1E3A8A"
+  },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
