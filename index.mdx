@@ -1,97 +1,145 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "JoroAR Documentation"
+description: "SwiftUI + RealityKit capture companion for high quality occlusion shots on LiDAR-enabled iOS devices."
 ---
 
-## Setting up
+## Overview
 
-Get your documentation site up and running in minutes.
+JoroAR is a SwiftUI + RealityKit capture companion for collecting high-quality occlusion shots on LiDAR-enabled iOS devices. It guides operators through a scripted flow, records synchronized video, audio, depth, and AR session metadata, and packages each capture into a reproducible scene bundle with automated QC metrics.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+## Highlights
 
-## Make it yours
+- Guided occlusion workflow with barrier-lock preflight, countdowns, dwell timers, and per-step prompts sourced from `shots_v1.json`.
+- Live quality gates: static camera lock detection, depth validity ribbon, gap estimation, brightness and grid heuristics, and contextual toasts.
+- Multi-sensor export: native-resolution H.264 video, 48 kHz PCM audio, `frames.jsonl` with intrinsics and poses, LiDAR depth PNGs, mesh OBJ/USDA placeholders, and a structured `manifest.json`.
+- Scene bundles saved under `Documents/scenes/...`, optionally mirrored into a user-chosen folder via the Files picker, with checksum manifests for verification.
+- Shot dashboard for quickly switching between scripted takes and tracking completion through `UserDefaults`.
+- Thermal-aware throttling that adjusts depth and QC sampling rates as the device warms.
 
-Design a docs site that looks great and empowers your users.
+## Requirements
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+- macOS with Xcode 15.4 or newer (required for Swift `@Observable` and the Testing framework).
+- iOS 17.0 or newer on a physical device; LiDAR-equipped hardware (iPhone 12 Pro+ or modern iPad Pro) is required for depth capture.
+- Developer provisioning profile with camera, microphone, photo library, and file access entitlements.
 
-## Create beautiful pages
+## Build & Run
 
-Everything you need to create world-class documentation.
+1. Clone the repository and open `JoroAR.xcodeproj` (or the workspace described in `buildServer.json`).
+2. Set the signing team and a unique bundle identifier in **Targets > Signing & Capabilities**.
+3. Select an **Any iOS Device (ARM64)** destination and run on a tethered LiDAR-capable device. The Simulator does not expose ARKit scene depth.
+4. On first launch grant camera, microphone, and photo permission prompts. Use the folder icon on the leading toolbar to pick an external save location if desired.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Operating the App
 
-## Need inspiration?
+- **Pick a shot:** Tap the grid button to open the shot dashboard. Shot metadata, tags, and prompts come from `shots_v1.json`.
+- **Lock the rig:** Keep the phone static until the green lock appears. The pipeline requires `<0.5°` rotation and `<2 mm` translation held for 2 s before it will begin recording.
+- **Barrier preflight:** Align the barrier in the ROI box. Live indicators display center and edge coverage and planarity sigma.
+- **Record:** Press Record once the lock turns green. The guided panel advances through barrier lock, show, hide move, dwell, and reappear phases with countdown overlays.
+- **QC feedback:** During capture the UI shows a gap meter, dwell timer, depth ribbon, and toasts for grid detection or lighting issues. QC summaries appear after stop.
+- **Stop and export:** Press Stop to finalize. Once post-processing finishes, the system presents a document exporter so you can copy the scene bundle out of the app sandbox. If export succeeds the selected shot is marked complete.
+- **Auto-save (optional):** When a Files destination is chosen, scene folders are mirrored there; otherwise they are kept under **On My iPhone/iPad > JoroAR/AutoSaves**.
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Scene Bundle Layout
+
+Each recording is written beneath `Documents/scenes/scene_<timestamp>_<hexid>/`. A typical capture looks like:
+
+```text
+scene_1725470012_4AF20C/
+|-- audio.wav
+|-- depth/
+|   |-- frame_000000.png
+|   `-- frame_000005.png
+|-- frames.jsonl
+|-- manifest.json
+|-- manifest.sha256.json
+|-- mesh.obj
+|-- mesh.usdz          # placeholder; OBJ is populated, USDZ is reserved
+|-- README.txt
+`-- video.mov
+```
+
+**Key files**
+
+- `video.mov`: H.264 stream recorded at the native ARKit resolution with real-time encoding settings tuned for dataset capture.
+- `audio.wav`: Mono 16-bit PCM sampled at 48 kHz. Audio routing sends prompts to the earpiece during capture to reduce bleed.
+- `depth/`: 16-bit PNGs in millimeters sampled every 5 frames (stride adapts with thermal policy). The ROI statistics used for QC are derived from the same 36% centered crop.
+- `frames.jsonl`: One JSON per frame containing `frame_idx`, ARKit timestamp, resolution, 3x3 intrinsics matrix (`ARKit_pixels`), camera pose as row-major `camera_in_world_4x4`, tracking state, optional depth path, and exposure metadata.
+- `manifest.json`: Rich capture metadata including device identifiers, codec, resolution, frame counts, depth stats, timing histograms, LiDAR presence, QC summary, occlusion gap metrics, recipe metadata, and timestamps.
+- `manifest.sha256.json`: SHA-256 hashes for the primary artifacts (`video.mov`, `frames.jsonl`, `mesh.obj`) to simplify integrity checks.
+- `README.txt`: Auto-generated reminder of coordinate conventions and modality details.
+- `refs/`: Created when reference images are added through the metadata editor.
+
+To fetch bundles without the document picker, connect the device in Finder and browse **Files > JoroAR > scenes**.
+
+## Quality Control & Gating
+
+- **Static camera gate:** Enforces `<0.5°` rotation and `<2 mm` translation over a 2 s window before and during capture (`QCThresholds.lock*`).
+- **Barrier lock:** Uses depth ROI sampling to confirm that at least 60% of pixels in the center and edge grids are closer than the background before progressing.
+- **Depth integrity:** Requires median object-to-barrier separation `>50 mm` with `>=70%` of hide-window samples passing the gap check; dwell must last 4–6 s.
+- **Thermal management:** `applyThermalPolicy` increases depth and QC strides as device state escalates from nominal → critical, with toast notifications.
+- **QC summary:** Median brightness, a simple sharpness proxy, tracking histogram, and depth validity medians inform a passed flag written to the manifest and displayed after capture.
+- **Live heuristics:** Background grid detection, lighting checks, countdown overlays, and a depth ribbon communicate operator actions in real time.
+
+## Shot Library & Guided Prompts
+
+`shots_v1.json` (schema version 1) drives the dashboard and the per-step prompts. Each `ShotCard` entry includes:
+
+```json
+{
+  "id": "S01",
+  "title": "Pen Peek - Same Side",
+  "qc": "occlusion",
+  "requiresStaticLock": true,
+  "tags": ["matte"],
+  "steps": [
+    {"type": "show"},
+    {"type": "moveBehindMatte"},
+    {"type": "hold", "seconds": 1.0},
+    {"type": "reappear", "side": "same"}
+  ]
+}
+```
+
+Tags adjust icons, barrier prompts, and checklist text. Steps map onto the guided flow (`show`, `moveBehindMatte`, `hold`, `reappear`, etc.), and additional steps are condensed into human-readable instructions. Completion state per shot is stored in `UserDefaults` via `shot_completed_<id>`.
+
+## Metadata Editing & Upload Hooks
+
+- `MetadataSheet` allows operators to attach cinema descriptors, prompt blocks, shot timing, and reference images. Saving updates `manifest.json` and stores any images under `refs/`.
+- `Uploader` can zip a scene folder (using `FileManager.zipItemAtURL` when available) and PUT it to a provided presigned URL. Hook this from the UI by prompting for a URL string and calling `uploader.upload(sceneURL:to:)`. Progress updates and results are exposed via `@Published` properties.
+- `AutoSaveManager` keeps a security-scoped bookmark for an external folder so each export can be mirrored automatically; if no bookmark is set, captures are copied into `Documents/AutoSaves`.
+
+## Project Structure
+
+- `JoroAR/ContentView.swift` — SwiftUI composition for the capture UI, overlays, guided flow, and toolbar affordances.
+- `JoroAR/CapturePipeline.swift` — Core AR session pipeline handling state management, recording, QC, manifest synthesis, and gating logic.
+- `JoroAR/DepthWriter.swift`, `VideoWriter.swift`, `AudioRecorder.swift` — Modality-specific writers.
+- `JoroAR/FramesJSONL.swift`, `Manifest.swift`, `Checksum.swift` — Serialization helpers for metadata exports.
+- `JoroAR/ShotDashboard.swift`, `ShotModels.swift`, `SceneRecipe.swift` — Shot selection UI, JSON schema models, and prompt derivation.
+- `JoroAR/MeshExporter.swift` — OBJ mesh export from `ARMeshAnchors` (USDZ placeholder maintained for future work).
+- `JoroAR/AutoSaveManager.swift`, `DocumentExporter.swift`, `Uploader.swift` — Post-capture tooling.
+- `JoroARTests/`, `JoroARUITests/` — Swift Testing and XCTest scaffolding (placeholders ready for expansion).
+
+## Testing
+
+Unit tests use the Swift Testing package (`import Testing`). Run them with **Product > Test** in Xcode or on the command line:
+
+```bash
+xcodebuild test \
+  -workspace JoroAR.xcodeproj/project.xcworkspace \
+  -scheme JoroAR \
+  -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+Simulator tests cover logic only; capture features require a real device. UI tests under `JoroARUITests` launch the app shell and include a launch performance baseline.
+
+## Roadmap & Known Gaps
+
+- Wire `AutoSaveManager.autoSave` into the export flow so scene mirroring happens automatically after document export.
+- Surface uploader UI (URL prompt, progress HUD, cancel support) and persist last-used endpoints.
+- Expand `SceneRecipe.all` beyond occlusion to cover additional modalities like water pours or flashlight sweeps defined in `SceneRecipe`.
+- Replace the USDZ placeholder in `MeshExporter` with an actual RealityKit export when available.
+- Add automated regression tests for QC gating and manifest assembly.
+
+## License
+
+The repository does not currently include an explicit license. Add one (MIT, Apache 2.0, etc.) before distributing binaries or source.
