@@ -1,11 +1,10 @@
----
-title: "JoroAR Documentation"
+title: "Primality Documentation"
 description: "SwiftUI + RealityKit capture companion for high quality occlusion shots on LiDAR-enabled iOS devices."
 ---
 
 ## Overview
 
-JoroAR is a SwiftUI + RealityKit capture companion for collecting high-quality occlusion shots on LiDAR-enabled iOS devices. It guides operators through a scripted flow, records synchronized video, audio, depth, and AR session metadata, and packages each capture into a reproducible scene bundle with automated QC metrics.
+Primality is a SwiftUI + RealityKit capture companion for collecting high-quality occlusion shots on LiDAR-enabled iOS devices. It guides operators through a scripted flow, records synchronized video, audio, depth, and AR session metadata, and packages each capture into a reproducible scene bundle with automated QC metrics.
 
 ## Highlights
 
@@ -24,7 +23,7 @@ JoroAR is a SwiftUI + RealityKit capture companion for collecting high-quality o
 
 ## Build & Run
 
-1. Clone the repository and open `JoroAR.xcodeproj` (or the workspace described in `buildServer.json`).
+1. Clone the repository and open `Primality.xcodeproj` (or the workspace described in `buildServer.json`).
 2. Set the signing team and a unique bundle identifier in **Targets > Signing & Capabilities**.
 3. Select an **Any iOS Device (ARM64)** destination and run on a tethered LiDAR-capable device. The Simulator does not expose ARKit scene depth.
 4. On first launch grant camera, microphone, and photo permission prompts. Use the folder icon on the leading toolbar to pick an external save location if desired.
@@ -37,7 +36,7 @@ JoroAR is a SwiftUI + RealityKit capture companion for collecting high-quality o
 - **Record:** Press Record once the lock turns green. The guided panel advances through barrier lock, show, hide move, dwell, and reappear phases with countdown overlays.
 - **QC feedback:** During capture the UI shows a gap meter, dwell timer, depth ribbon, and toasts for grid detection or lighting issues. QC summaries appear after stop.
 - **Stop and export:** Press Stop to finalize. Once post-processing finishes, the system presents a document exporter so you can copy the scene bundle out of the app sandbox. If export succeeds the selected shot is marked complete.
-- **Auto-save (optional):** When a Files destination is chosen, scene folders are mirrored there; otherwise they are kept under **On My iPhone/iPad > JoroAR/AutoSaves**.
+- **Auto-save (optional):** When a Files destination is chosen, scene folders are mirrored there; otherwise they are kept under **On My iPhone/iPad > Primality/AutoSaves**.
 
 ## Scene Bundle Layout
 
@@ -69,7 +68,7 @@ scene_1725470012_4AF20C/
 - `README.txt`: Auto-generated reminder of coordinate conventions and modality details.
 - `refs/`: Created when reference images are added through the metadata editor.
 
-To fetch bundles without the document picker, connect the device in Finder and browse **Files > JoroAR > scenes**.
+To fetch bundles without the document picker, connect the device in Finder and browse **Files > Primality > scenes**.
 
 ## Quality Control & Gating
 
@@ -110,14 +109,14 @@ Tags adjust icons, barrier prompts, and checklist text. Steps map onto the guide
 
 ## Project Structure
 
-- `JoroAR/ContentView.swift` — SwiftUI composition for the capture UI, overlays, guided flow, and toolbar affordances.
-- `JoroAR/CapturePipeline.swift` — Core AR session pipeline handling state management, recording, QC, manifest synthesis, and gating logic.
-- `JoroAR/DepthWriter.swift`, `VideoWriter.swift`, `AudioRecorder.swift` — Modality-specific writers.
-- `JoroAR/FramesJSONL.swift`, `Manifest.swift`, `Checksum.swift` — Serialization helpers for metadata exports.
-- `JoroAR/ShotDashboard.swift`, `ShotModels.swift`, `SceneRecipe.swift` — Shot selection UI, JSON schema models, and prompt derivation.
-- `JoroAR/MeshExporter.swift` — OBJ mesh export from `ARMeshAnchors` (USDZ placeholder maintained for future work).
-- `JoroAR/AutoSaveManager.swift`, `DocumentExporter.swift`, `Uploader.swift` — Post-capture tooling.
-- `JoroARTests/`, `JoroARUITests/` — Swift Testing and XCTest scaffolding (placeholders ready for expansion).
+- `Primality/ContentView.swift` — SwiftUI composition for the capture UI, overlays, guided flow, and toolbar affordances.
+- `Primality/CapturePipeline.swift` — Core AR session pipeline handling state management, recording, QC, manifest synthesis, and gating logic.
+- `Primality/DepthWriter.swift`, `VideoWriter.swift`, `AudioRecorder.swift` — Modality-specific writers.
+- `Primality/FramesJSONL.swift`, `Manifest.swift`, `Checksum.swift` — Serialization helpers for metadata exports.
+- `Primality/ShotDashboard.swift`, `ShotModels.swift`, `SceneRecipe.swift` — Shot selection UI, JSON schema models, and prompt derivation.
+- `Primality/MeshExporter.swift` — OBJ mesh export from `ARMeshAnchors` (USDZ placeholder maintained for future work).
+- `Primality/AutoSaveManager.swift`, `DocumentExporter.swift`, `Uploader.swift` — Post-capture tooling.
+- `PrimalityTests/`, `PrimalityUITests/` — Swift Testing and XCTest scaffolding (placeholders ready for expansion).
 
 ## Testing
 
@@ -125,12 +124,12 @@ Unit tests use the Swift Testing package (`import Testing`). Run them with **Pro
 
 ```bash
 xcodebuild test \
-  -workspace JoroAR.xcodeproj/project.xcworkspace \
-  -scheme JoroAR \
+  -workspace Primality.xcodeproj/project.xcworkspace \
+  -scheme Primality \
   -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
-Simulator tests cover logic only; capture features require a real device. UI tests under `JoroARUITests` launch the app shell and include a launch performance baseline.
+Simulator tests cover logic only; capture features require a real device. UI tests under `PrimalityUITests` launch the app shell and include a launch performance baseline.
 
 ## Roadmap & Known Gaps
 
